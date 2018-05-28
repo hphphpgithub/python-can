@@ -62,7 +62,7 @@ install:
   - cd ports/unix
   - make axtls
   - make
-  - make install
+  - sudo make install
   - cd ../../../python-can
 
 script:
