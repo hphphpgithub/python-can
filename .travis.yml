@@ -46,6 +46,10 @@ matrix:
     # Python 3.3 tests are allowed to fail since Python 3.3 is not offically supported any more
     - python: "3.3"
 
+before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install -y build-essential libffi-dev pkg-config
+
 install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo bash test/open_vcan.sh ; fi
   - travis_retry pip install .[test]
@@ -58,8 +62,9 @@ install:
   - cd ports/unix
   - make axtls
   - make
+  - make install
   - cd ../../../python-can
 
 script:
   - py.test -v --timeout=300
-  - ../micropython/micropython -m pytest -v --timeout=300
+  - micropython -m pytest -v --timeout=300
