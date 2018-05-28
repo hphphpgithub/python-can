@@ -50,5 +50,15 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo bash test/open_vcan.sh ; fi
   - travis_retry pip install .[test]
 
+  # install micropython, see https://github.com/micropython/micropython#the-unix-version
+  - git clone https://github.com/micropython/micropython.git
+  - cd micropython
+  - git submodule update --init
+  - cd ports/unix
+  - make axtls
+  - make
+  - cd ..
+
 script:
   - py.test -v --timeout=300
+  - ./micropython/micropython -m pytest -v --timeout=300
