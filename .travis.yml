@@ -64,6 +64,7 @@ install:
   - make
   - sudo make install
   - cd ../../../python-can
+  - micropython -m upip install .[test]
 
 script:
   - py.test -v --timeout=300
