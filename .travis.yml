@@ -64,8 +64,8 @@ install:
   - make
   - sudo make install
   - cd ../../../python-can
-  - micropython -m upip install .
-  - micropython -m upip install mock nose pytest-timeout pyserial
+  - micropython -m pip install .
+  - micropython -m pip install mock nose pytest-timeout pyserial
 
 script:
   - py.test -v --timeout=300
