@@ -15,18 +15,16 @@ A form of CAN interface is also required.
    bus
    message
    listeners
+   asyncio
    bcm
+   internal-api
 
 
 Utilities
 ---------
 
-.. automodule:: can.util
-    :members:
 
 .. automethod:: can.detect_available_configs
-
-
 
 
 .. _notifier:

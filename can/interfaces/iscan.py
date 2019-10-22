@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # coding: utf-8
 
 """
@@ -36,7 +35,7 @@ def check_status(result, function, arguments):
 
 try:
     iscan = ctypes.cdll.LoadLibrary("iscandrv")
-except Exception as e:
+except OSError as e:
     iscan = None
     logger.warning("Failed to load IS-CAN driver: %s", e)
 else:
@@ -112,7 +111,7 @@ class IscanBus(BusABC):
                 break
 
         msg = Message(arbitration_id=raw_msg.message_id,
-                      extended_id=bool(raw_msg.is_extended),
+                      is_extended_id=bool(raw_msg.is_extended),
                       timestamp=time.time(),                    # Better than nothing...
                       is_remote_frame=bool(raw_msg.remote_req),
                       dlc=raw_msg.data_len,
@@ -148,6 +147,7 @@ class IscanError(CanError):
         10: "Thread already started",
         11: "Buffer overrun",
         12: "Device not initialized",
+        15: "Found the device, but it is being used by another process",
         16: "Bus error",
         17: "Bus off",
         18: "Error passive",

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # coding: utf-8
 
 """
@@ -124,6 +123,8 @@ def __check_status(result, function, arguments):
         raise VCIRxQueueEmptyError()
     elif result == constants.VCI_E_NO_MORE_ITEMS:
         raise StopIteration()
+    elif result == constants.VCI_E_ACCESSDENIED:
+        pass # not a real error, might happen if another program has initialized the bus
     elif result != constants.VCI_OK:
         raise VCIError(vciFormatError(function, result))
 
@@ -271,13 +272,16 @@ class IXXATBus(BusABC):
         }
     }
 
-    def __init__(self, channel, can_filters=None, **config):
+    def __init__(self, channel, can_filters=None, **kwargs):
         """
         :param int channel:
             The Channel id to create this bus with.
 
         :param list can_filters:
             See :meth:`can.BusABC.set_filters`.
+
+        :param bool receive_own_messages:
+            Enable self-reception of sent messages.
 
         :param int UniqueHardwareId:
             UniqueHardwareId to connect (optional, will use the first found if not supplied)
@@ -288,12 +292,13 @@ class IXXATBus(BusABC):
         if _canlib is None:
             raise ImportError("The IXXAT VCI library has not been initialized. Check the logs for more details.")
         log.info("CAN Filters: %s", can_filters)
-        log.info("Got configuration of: %s", config)
+        log.info("Got configuration of: %s", kwargs)
         # Configuration options
-        bitrate = config.get('bitrate', 500000)
-        UniqueHardwareId = config.get('UniqueHardwareId', None)
-        rxFifoSize = config.get('rxFifoSize', 16)
-        txFifoSize = config.get('txFifoSize', 16)
+        bitrate = kwargs.get('bitrate', 500000)
+        UniqueHardwareId = kwargs.get('UniqueHardwareId', None)
+        rxFifoSize = kwargs.get('rxFifoSize', 16)
+        txFifoSize = kwargs.get('txFifoSize', 16)
+        self._receive_own_messages = kwargs.get('receive_own_messages', False)
         # Usually comes as a string from the config file
         channel = int(channel)
 
@@ -390,7 +395,7 @@ class IXXATBus(BusABC):
             except (VCITimeout, VCIRxQueueEmptyError):
                 break
 
-        super(IXXATBus, self).__init__(channel=channel, can_filters=None, **config)
+        super(IXXATBus, self).__init__(channel=channel, can_filters=None, **kwargs)
 
     def _inWaiting(self):
         try:
@@ -467,24 +472,23 @@ class IXXATBus(BusABC):
         rx_msg = Message(
             timestamp=self._message.dwTime / self._tick_resolution,  # Relative time in s
             is_remote_frame=True if self._message.uMsgInfo.Bits.rtr else False,
-            extended_id=True if self._message.uMsgInfo.Bits.ext else False,
+            is_extended_id=True if self._message.uMsgInfo.Bits.ext else False,
             arbitration_id=self._message.dwMsgId,
             dlc=self._message.uMsgInfo.Bits.dlc,
             data=self._message.abData[:self._message.uMsgInfo.Bits.dlc],
             channel=self.channel
         )
 
-        log.debug('Recv()ed message %s', rx_msg)
         return rx_msg, True
 
     def send(self, msg, timeout=None):
-        log.debug("Sending message: %s", msg)
 
         # This system is not designed to be very efficient
         message = structures.CANMSG()
         message.uMsgInfo.Bits.type = constants.CAN_MSGTYPE_DATA
         message.uMsgInfo.Bits.rtr = 1 if msg.is_remote_frame else 0
-        message.uMsgInfo.Bits.ext = 1 if msg.id_type else 0
+        message.uMsgInfo.Bits.ext = 1 if msg.is_extended_id else 0
+        message.uMsgInfo.Bits.srr = 1 if self._receive_own_messages else 0
         message.dwMsgId = msg.arbitration_id
         if msg.dlc:
             message.uMsgInfo.Bits.dlc = msg.dlc
@@ -497,7 +501,7 @@ class IXXATBus(BusABC):
         else:
             _canlib.canChannelPostMessage(self._channel_handle, message)
 
-    def send_periodic(self, msg, period, duration=None):
+    def _send_periodic_internal(self, msg, period, duration=None):
         """Send a message using built-in cyclic transmit list functionality."""
         if self._scheduler is None:
             self._scheduler = HANDLE()
@@ -543,7 +547,7 @@ class CyclicSendTask(LimitedDurationCyclicSendTaskABC,
         self._msg.wCycleTime = int(round(period * resolution))
         self._msg.dwMsgId = msg.arbitration_id
         self._msg.uMsgInfo.Bits.type = constants.CAN_MSGTYPE_DATA
-        self._msg.uMsgInfo.Bits.ext = 1 if msg.id_type else 0
+        self._msg.uMsgInfo.Bits.ext = 1 if msg.is_extended_id else 0
         self._msg.uMsgInfo.Bits.rtr = 1 if msg.is_remote_frame else 0
         self._msg.uMsgInfo.Bits.dlc = msg.dlc
         for i, b in enumerate(msg.data):

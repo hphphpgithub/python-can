@@ -7,17 +7,30 @@ types and example comments with different challenges.
 """
 
 import random
+from operator import attrgetter
 
 from can import Message
 
 # make tests more reproducible
 random.seed(13339115)
 
+
+def sort_messages(messages):
+    """
+    Sorts the given messages by timestamps (ascending).
+
+    :param Iterable[can.Message] messages: a sequence of messages to sort
+    :rtype: list
+    """
+    return list(sorted(messages, key=attrgetter('timestamp')))
+
+
 # some random number
 TEST_TIME = 1483389946.197
 
+
 # List of messages of different types that can be used in tests
-TEST_MESSAGES_BASE = [
+TEST_MESSAGES_BASE = sort_messages([
     Message(
         # empty
     ),
@@ -27,11 +40,11 @@ TEST_MESSAGES_BASE = [
     ),
     Message(
         # no data
-        arbitration_id=0xAB, extended_id=False
+        arbitration_id=0xAB, is_extended_id=False
     ),
     Message(
         # no data
-        arbitration_id=0x42, extended_id=True
+        arbitration_id=0x42, is_extended_id=True
     ),
     Message(
         # no data
@@ -46,53 +59,69 @@ TEST_MESSAGES_BASE = [
         data=[0xFF, 0xFE, 0xFD],
     ),
     Message(
-        arbitration_id=0xABCDEF, extended_id=True,
+        # with channel as integer
+        channel=0,
+    ),
+    Message(
+        # with channel as integer
+        channel=42,
+    ),
+    Message(
+        # with channel as string
+        channel="vcan0",
+    ),
+    Message(
+        # with channel as string
+        channel="awesome_channel",
+    ),
+    Message(
+        arbitration_id=0xABCDEF, is_extended_id=True,
         timestamp=TEST_TIME,
         data=[1, 2, 3, 4, 5, 6, 7, 8]
     ),
     Message(
-        arbitration_id=0x123, extended_id=False,
+        arbitration_id=0x123, is_extended_id=False,
         timestamp=TEST_TIME + 42.42,
         data=[0xff, 0xff]
     ),
     Message(
-        arbitration_id=0xDADADA, extended_id=True,
+        arbitration_id=0xDADADA, is_extended_id=True,
         timestamp=TEST_TIME + .165,
         data=[1, 2, 3, 4, 5, 6, 7, 8]
     ),
     Message(
-        arbitration_id=0x123, extended_id=False,
+        arbitration_id=0x123, is_extended_id=False,
         timestamp=TEST_TIME + .365,
         data=[254, 255]
     ),
     Message(
-        arbitration_id=0x768, extended_id=False,
+        arbitration_id=0x768, is_extended_id=False,
         timestamp=TEST_TIME + 3.165
     ),
-]
+])
 
-TEST_MESSAGES_REMOTE_FRAMES = [
+
+TEST_MESSAGES_REMOTE_FRAMES = sort_messages([
     Message(
-        arbitration_id=0xDADADA, extended_id=True, is_remote_frame=True,
+        arbitration_id=0xDADADA, is_extended_id=True, is_remote_frame=True,
         timestamp=TEST_TIME + .165,
-        data=[1, 2, 3, 4, 5, 6, 7, 8]
     ),
     Message(
-        arbitration_id=0x123, extended_id=False, is_remote_frame=True,
+        arbitration_id=0x123, is_extended_id=False, is_remote_frame=True,
         timestamp=TEST_TIME + .365,
-        data=[254, 255]
     ),
     Message(
-        arbitration_id=0x768, extended_id=False, is_remote_frame=True,
+        arbitration_id=0x768, is_extended_id=False, is_remote_frame=True,
         timestamp=TEST_TIME + 3.165
     ),
     Message(
-        arbitration_id=0xABCDEF, extended_id=True, is_remote_frame=True,
+        arbitration_id=0xABCDEF, is_extended_id=True, is_remote_frame=True,
         timestamp=TEST_TIME + 7858.67
     ),
-]
+])
 
-TEST_MESSAGES_ERROR_FRAMES = [
+
+TEST_MESSAGES_ERROR_FRAMES = sort_messages([
     Message(
         is_error_frame=True
     ),
@@ -104,9 +133,12 @@ TEST_MESSAGES_ERROR_FRAMES = [
         is_error_frame=True,
         timestamp=TEST_TIME + 17.157
     )
-]
+])
 
-TEST_ALL_MESSAGES = TEST_MESSAGES_BASE + TEST_MESSAGES_REMOTE_FRAMES + TEST_MESSAGES_ERROR_FRAMES
+
+TEST_ALL_MESSAGES = sort_messages(TEST_MESSAGES_BASE + TEST_MESSAGES_REMOTE_FRAMES + \
+                                  TEST_MESSAGES_ERROR_FRAMES)
+
 
 TEST_COMMENTS = [
     "This is the first comment",
@@ -127,4 +159,4 @@ def generate_message(arbitration_id):
     and a non-extended ID.
     """
     data = bytearray([random.randrange(0, 2 ** 8 - 1) for _ in range(8)])
-    return Message(arbitration_id=arbitration_id, data=data, extended_id=False)
+    return Message(arbitration_id=arbitration_id, data=data, is_extended_id=False, timestamp=TEST_TIME)

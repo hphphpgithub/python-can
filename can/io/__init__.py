@@ -1,8 +1,7 @@
-#!/usr/bin/env python
 # coding: utf-8
 
 """
-Read and Write CAN bus messages using a range of Readers
+Read and write CAN bus messages using a range of Readers
 and Writers based off the file extension.
 """
 
@@ -18,4 +17,4 @@ from .blf import BLFReader, BLFWriter
 from .canutils import CanutilsLogReader, CanutilsLogWriter
 from .csv import CSVWriter, CSVReader
 from .sqlite import SqliteReader, SqliteWriter
-from .stdout import Printer
+from .printer import Printer

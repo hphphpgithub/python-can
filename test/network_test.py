@@ -55,7 +55,7 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
                 arbitration_id=self.ids[i],
                 is_remote_frame=self.remote_flags[i],
                 is_error_frame=self.error_flags[i],
-                extended_id=self.extended_flags[i],
+                is_extended_id=self.extended_flags[i],
                 data=self.data[i]
             )
             #logging.debug("writing message: {}".format(m))
@@ -101,7 +101,7 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
             self.assertIsNotNone(msg, "Didn't receive a message")
             #logging.debug("Received message {} with data: {}".format(i, msg.data))
 
-            self.assertEqual(msg.id_type, self.extended_flags[i])
+            self.assertEqual(msg.is_extended_id, self.extended_flags[i])
             if not msg.is_remote_frame:
                 self.assertEqual(msg.data, self.data[i])
             self.assertEqual(msg.arbitration_id, self.ids[i])
