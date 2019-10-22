@@ -11,8 +11,7 @@ class, for example::
     vector_bus = can.Bus(interface='vector', ...)
 
 That bus is then able to handle the interface specific software/hardware interactions
-and implements the :class:`~can.BusABC` API. It itself is an instance of ``VectorBus``,
-but these specififc buses should not be instantiated directly.
+and implements the :class:`~can.BusABC` API.
 
 A thread safe bus wrapper is also available, see `Thread safe bus`_.
 
@@ -31,12 +30,14 @@ API
     :members:
     :undoc-members:
 
+    .. automethod:: __iter__
 
 Transmitting
 ''''''''''''
 
-Writing to the bus is done by calling the :meth:`~can.BusABC.send` method and
-passing a :class:`~can.Message` instance.
+Writing individual messages to the bus is done by calling the :meth:`~can.BusABC.send` method
+and passing a :class:`~can.Message` instance. Periodic sending is controlled by the
+:ref:`broadcast manager <bcm>`.
 
 
 Receiving
@@ -68,7 +69,7 @@ Conflicting calls are executed by blocking until the bus is accessible.
 
 It can be used exactly like the normal :class:`~can.BusABC`:
 
-    # 'socketcan' is only an exemple interface, it works with all the others too
+    # 'socketcan' is only an example interface, it works with all the others too
     my_bus = can.ThreadSafeBus(interface='socketcan', channel='vcan0')
     my_bus.send(...)
     my_bus.recv(...)

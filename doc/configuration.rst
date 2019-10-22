@@ -36,16 +36,16 @@ Configuration File
 
 On Linux systems the config file is searched in the following paths:
 
-1. ``~/can.conf``
-2. ``/etc/can.conf``
-3. ``$HOME/.can``
-4. ``$HOME/.canrc``
+#. ``~/can.conf``
+#. ``/etc/can.conf``
+#. ``$HOME/.can``
+#. ``$HOME/.canrc``
 
 On Windows systems the config file is searched in the following paths:
 
-1. ``~/can.conf``
-1. ``can.ini`` (current working directory)
-2. ``$APPDATA/can.ini``
+#. ``~/can.conf``
+#. ``can.ini`` (current working directory)
+#. ``$APPDATA/can.ini``
 
 The configuration file sets the default interface and channel:
 
@@ -57,7 +57,7 @@ The configuration file sets the default interface and channel:
     bitrate = <the bitrate in bits/s to use by default>
 
 
-The configuration can also contain additional sections:
+The configuration can also contain additional sections (or context):
 
 ::
 
@@ -81,8 +81,8 @@ The configuration can also contain additional sections:
 
     from can.interfaces.interface import Bus
 
-    hs_bus = Bus(config_section='HS')
-    ms_bus = Bus(config_section='MS')
+    hs_bus = Bus(context='HS')
+    ms_bus = Bus(context='MS')
 
 Environment Variables
 ---------------------
@@ -92,6 +92,13 @@ Configuration can be pulled from these environmental variables:
     * CAN_INTERFACE
     * CAN_CHANNEL
     * CAN_BITRATE
+    * CAN_CONFIG
+
+The ``CAN_CONFIG`` environment variable allows to set any bus configuration using JSON.
+
+For example:
+
+``CAN_INTERFACE=socketcan CAN_CONFIG={"receive_own_messages": true, "fd": true}``
 
 
 Interface Names
@@ -125,4 +132,8 @@ Lookup table of interface names:
 | ``"vector"``        | :doc:`interfaces/vector`            |
 +---------------------+-------------------------------------+
 | ``"virtual"``       | :doc:`interfaces/virtual`           |
++---------------------+-------------------------------------+
+| ``"canalystii"``    | :doc:`interfaces/canalystii`        |
++---------------------+-------------------------------------+
+| ``"systec"``        | :doc:`interfaces/systec`            |
 +---------------------+-------------------------------------+

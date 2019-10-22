@@ -1,60 +1,41 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 """
 Utilities and configuration file parsing.
 """
 
-from __future__ import absolute_import, print_function
+from typing import Dict, Optional, Union
 
+from can import typechecking
+
+import json
 import os
 import os.path
-import sys
 import platform
 import re
 import logging
-try:
-    from configparser import ConfigParser
-except ImportError:
-    from ConfigParser import SafeConfigParser as ConfigParser
+from configparser import ConfigParser
 
 import can
 from can.interfaces import VALID_INTERFACES
 
-log = logging.getLogger('can.util')
+log = logging.getLogger("can.util")
 
 # List of valid data lengths for a CAN FD message
-CAN_FD_DLC = [
-    0, 1, 2, 3, 4, 5, 6, 7, 8,
-    12, 16, 20, 24, 32, 48, 64
-]
+CAN_FD_DLC = [0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 32, 48, 64]
 
-REQUIRED_KEYS = [
-    'interface',
-    'channel',
-]
+REQUIRED_KEYS = ["interface", "channel"]
 
 
-CONFIG_FILES = ['~/can.conf']
+CONFIG_FILES = ["~/can.conf"]
 
 if platform.system() == "Linux":
-    CONFIG_FILES.extend(
-        [
-            '/etc/can.conf',
-            '~/.can',
-            '~/.canrc'
-        ]
-    )
+    CONFIG_FILES.extend(["/etc/can.conf", "~/.can", "~/.canrc"])
 elif platform.system() == "Windows" or platform.python_implementation() == "IronPython":
-    CONFIG_FILES.extend(
-        [
-            'can.ini',
-            os.path.join(os.getenv('APPDATA', ''), 'can.ini')
-        ]
-    )
+    CONFIG_FILES.extend(["can.ini", os.path.join(os.getenv("APPDATA", ""), "can.ini")])
 
 
-def load_file_config(path=None, section=None):
+def load_file_config(
+    path: Optional[typechecking.AcceptedIOType] = None, section: str = "default"
+) -> Dict[str, str]:
     """
     Loads configuration from file with following content::
 
@@ -76,38 +57,54 @@ def load_file_config(path=None, section=None):
 
     _config = {}
 
-    section = section if section is not None else 'default'
     if config.has_section(section):
-        if config.has_section('default'):
-            _config.update(
-                dict((key, val) for key, val in config.items('default')))
         _config.update(dict((key, val) for key, val in config.items(section)))
 
     return _config
 
 
-def load_environment_config():
+def load_environment_config(context: Optional[str] = None) -> Dict[str, str]:
     """
     Loads config dict from environmental variables (if set):
 
     * CAN_INTERFACE
     * CAN_CHANNEL
     * CAN_BITRATE
+    * CAN_CONFIG
+
+    if context is supplied, "_{context}" is appended to the environment
+    variable name we will look at. For example if context="ABC":
+
+    * CAN_INTERFACE_ABC
+    * CAN_CHANNEL_ABC
+    * CAN_BITRATE_ABC
+    * CAN_CONFIG_ABC
 
     """
     mapper = {
-        'interface': 'CAN_INTERFACE',
-        'channel': 'CAN_CHANNEL',
-        'bitrate': 'CAN_BITRATE',
+        "interface": "CAN_INTERFACE",
+        "channel": "CAN_CHANNEL",
+        "bitrate": "CAN_BITRATE",
     }
-    return dict(
-        (key, os.environ.get(val))
-        for key, val in mapper.items()
-        if val in os.environ
-    )
+
+    context_suffix = "_{}".format(context) if context else ""
+
+    can_config_key = "CAN_CONFIG" + context_suffix
+    config: Dict[str, str] = json.loads(os.environ.get(can_config_key, "{}"))
+
+    for key, val in mapper.items():
+        config_option = os.environ.get(val + context_suffix, None)
+        if config_option:
+            config[key] = config_option
+
+    return config
 
 
-def load_config(path=None, config=None, context=None):
+def load_config(
+    path: Optional[typechecking.AcceptedIOType] = None,
+    config=None,
+    context: Optional[str] = None,
+) -> typechecking.BusConfig:
     """
     Returns a dict with configuration details which is loaded from (in this order):
 
@@ -121,7 +118,7 @@ def load_config(path=None, config=None, context=None):
     kvaser, socketcan, pcan, usb2can, ixxat, nican, virtual.
 
     .. note::
- 
+
             The key ``bustype`` is copied to ``interface`` if that one is missing
             and does never appear in the result.
 
@@ -162,8 +159,12 @@ def load_config(path=None, config=None, context=None):
     config_sources = [
         given_config,
         can.rc,
-        lambda _context: load_environment_config(),  # context is not supported
-        lambda _context: load_file_config(path, _context)
+        lambda _context: load_environment_config(  # pylint: disable=unnecessary-lambda
+            _context
+        ),
+        lambda _context: load_environment_config(),
+        lambda _context: load_file_config(path, _context),
+        lambda _context: load_file_config(path),
     ]
 
     # Slightly complex here to only search for the file config if required
@@ -171,10 +172,10 @@ def load_config(path=None, config=None, context=None):
         if callable(cfg):
             cfg = cfg(context)
         # remove legacy operator (and copy to interface if not already present)
-        if 'bustype' in cfg:
-            if 'interface' not in cfg or not cfg['interface']:
-                cfg['interface'] = cfg['bustype']
-            del cfg['bustype']
+        if "bustype" in cfg:
+            if "interface" not in cfg or not cfg["interface"]:
+                cfg["interface"] = cfg["bustype"]
+            del cfg["bustype"]
         # copy all new parameters
         for key in cfg:
             if key not in config:
@@ -185,43 +186,60 @@ def load_config(path=None, config=None, context=None):
         if key not in config:
             config[key] = None
 
-    # deprecated socketcan types
-    if config['interface'] in ('socketcan_native', 'socketcan_ctypes'):
-        # Change this to a DeprecationWarning in future 2.x releases
-        # Remove completely in 3.0
-        log.warning('%s is deprecated, use socketcan instead', config['interface'])
-        config['interface'] = 'socketcan'
+    if config["interface"] not in VALID_INTERFACES:
+        raise NotImplementedError(
+            "Invalid CAN Bus Type - {}".format(config["interface"])
+        )
 
-    if config['interface'] not in VALID_INTERFACES:
-        raise NotImplementedError('Invalid CAN Bus Type - {}'.format(config['interface']))
+    if "bitrate" in config:
+        config["bitrate"] = int(config["bitrate"])
+    if "fd" in config:
+        config["fd"] = config["fd"] not in ("0", "False", "false")
+    if "data_bitrate" in config:
+        config["data_bitrate"] = int(config["data_bitrate"])
 
-    if 'bitrate' in config:
-        config['bitrate'] = int(config['bitrate'])
+    # Create bit timing configuration if given
+    timing_conf = {}
+    for key in (
+        "f_clock",
+        "brp",
+        "tseg1",
+        "tseg2",
+        "sjw",
+        "nof_samples",
+        "btr0",
+        "btr1",
+    ):
+        if key in config:
+            timing_conf[key] = int(config[key], base=0)
+            del config[key]
+    if timing_conf:
+        timing_conf["bitrate"] = config.get("bitrate")
+        config["timing"] = can.BitTiming(**timing_conf)
 
     can.log.debug("can config: {}".format(config))
     return config
 
-            
-def set_logging_level(level_name=None):
+
+def set_logging_level(level_name: Optional[str] = None):
     """Set the logging level for the "can" logger.
     Expects one of: 'critical', 'error', 'warning', 'info', 'debug', 'subdebug'
     """
-    can_logger = logging.getLogger('can')
+    can_logger = logging.getLogger("can")
 
     try:
-        can_logger.setLevel(getattr(logging, level_name.upper()))
+        can_logger.setLevel(getattr(logging, level_name.upper()))  # type: ignore
     except AttributeError:
         can_logger.setLevel(logging.DEBUG)
     log.debug("Logging set to {}".format(level_name))
 
 
-def len2dlc(length):
+def len2dlc(length: int) -> int:
     """Calculate the DLC from data length.
 
     :param int length: Length in number of bytes (0-64)
 
     :returns: DLC (0-15)
-    :rtype: int
     """
     if length <= 8:
         return length
@@ -231,25 +249,23 @@ def len2dlc(length):
     return 15
 
 
-def dlc2len(dlc):
+def dlc2len(dlc: int) -> int:
     """Calculate the data length from DLC.
 
-    :param int dlc: DLC (0-15)
+    :param dlc: DLC (0-15)
 
     :returns: Data length in number of bytes (0-64)
-    :rtype: int
     """
     return CAN_FD_DLC[dlc] if dlc <= 15 else 64
 
 
-def channel2int(channel):
+def channel2int(channel: Optional[Union[typechecking.Channel]]) -> Optional[int]:
     """Try to convert the channel to an integer.
 
     :param channel:
         Channel string (e.g. can0, CAN1) or integer
-    
+
     :returns: Channel integer or `None` if unsuccessful
-    :rtype: int
     """
     if channel is None:
         return None
@@ -257,7 +273,7 @@ def channel2int(channel):
         return channel
     # String and byte objects have a lower() method
     if hasattr(channel, "lower"):
-        match = re.match(r'.*(\d+)$', channel)
+        match = re.match(r".*(\d+)$", channel)
         if match:
             return int(match.group(1))
     return None

@@ -1,28 +1,25 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 """
 ``can`` is an object-orient Controller Area Network (CAN) interface module.
 """
 
-from __future__ import absolute_import
-
 import logging
 
-__version__ = "2.3.0-dev"
+from typing import Dict, Any
 
-log = logging.getLogger('can')
+__version__ = "3.2.0"
 
-rc = dict()
+log = logging.getLogger("can")
+
+rc: Dict[str, Any] = dict()
 
 
 class CanError(IOError):
     """Indicates an error with the CAN network.
 
     """
-    pass
 
-from .listener import Listener, BufferedReader, RedirectReader
+
+from .listener import Listener, BufferedReader, RedirectReader, AsyncBufferedReader
 
 from .io import Logger, Printer, LogReader, MessageSync
 from .io import ASCWriter, ASCReader
@@ -40,12 +37,12 @@ from .notifier import Notifier
 from .interfaces import VALID_INTERFACES
 from . import interface
 from .interface import Bus, detect_available_configs
+from .bit_timing import BitTiming
 
-from .broadcastmanager import send_periodic, \
-    CyclicSendTaskABC, \
-    LimitedDurationCyclicSendTaskABC, \
-    ModifiableCyclicTaskABC, \
-    MultiRateCyclicSendTaskABC, \
-    RestartableCyclicTaskABC
-
-from .scripts import *
+from .broadcastmanager import (
+    CyclicSendTaskABC,
+    LimitedDurationCyclicSendTaskABC,
+    ModifiableCyclicTaskABC,
+    MultiRateCyclicSendTaskABC,
+    RestartableCyclicTaskABC,
+)

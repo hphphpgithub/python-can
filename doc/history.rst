@@ -21,6 +21,7 @@ project in 2011. The socketcan interface was helped immensely by Phil Dixon
 who wrote a leaf-socketcan driver for Linux.
 
 The pcan interface was contributed by Albert Bloomfield in 2013.
+Support for pcan on Mac was added by Kristian Sloth Lauszus in 2018.
 
 The usb2can interface was contributed by Joshua Villyard in 2015.
 
@@ -34,13 +35,16 @@ a C++ library by Toby Lorenz.
 The slcan interface, ASCII listener and log logger and listener were contributed
 by Eduard Bröcker in 2017.
 
-The NeoVi interface for ICS (Intrepid Control Systems) devices was contributed 
+The NeoVi interface for ICS (Intrepid Control Systems) devices was contributed
 by Pierre-Luc Tessier Gagné in 2017.
 
 Many improvements all over the library, cleanups, unifications as well as more
 comprehensive documentation and CI testing was contributed by Felix Divo in 2017
 and 2018.
 
+The CAN viewer terminal script was contributed by Kristian Sloth Lauszus in 2018.
+
+The CANalyst-II interface was contributed by Shaoyu Meng in 2018.
 
 Support for CAN within Python
 -----------------------------
@@ -51,7 +55,7 @@ Python natively supports the CAN protocol from version 3.3 on, if running on Lin
 Python version  Feature                                                         Link
 ==============  ==============================================================  ====
 3.3             Initial SocketCAN support                                       `Docs <https://docs.python.org/3/library/socket.html#socket.AF_CAN>`__
-3.4             Broadcast Banagement (BCM) commands are natively supported      `Docs <https://docs.python.org/3/library/socket.html#socket.CAN_BCM>`__
+3.4             Broadcast Management (BCM) commands are natively supported      `Docs <https://docs.python.org/3/library/socket.html#socket.CAN_BCM>`__
 3.5             CAN FD support                                                  `Docs <https://docs.python.org/3/library/socket.html#socket.CAN_RAW_FD_FRAMES>`__
 3.7             Support for CAN ISO-TP                                          `Docs <https://docs.python.org/3/library/socket.html#socket.CAN_ISOTP>`__
 ==============  ==============================================================  ====

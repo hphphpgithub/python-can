@@ -23,6 +23,15 @@ Message
     2.0B) in length, and ``python-can`` exposes this difference with the
     :attr:`~can.Message.is_extended_id` attribute.
 
+    .. attribute:: timestamp
+
+        :type: float
+
+        The timestamp field in a CAN message is a floating point number representing when
+        the message was received since the epoch in seconds. Where possible this will be
+        timestamped in hardware.
+
+
     .. attribute:: arbitration_id
 
         :type: int
@@ -30,11 +39,11 @@ Message
         The frame identifier used for arbitration on the bus.
 
         The arbitration ID can take an int between 0 and the
-        maximum value allowed depending on the is_extended_id flag
+        maximum value allowed depending on the ``is_extended_id`` flag
         (either 2\ :sup:`11` - 1 for 11-bit IDs, or
         2\ :sup:`29` - 1 for 29-bit identifiers).
 
-            >>> print(Message(extended_id=False, arbitration_id=100))
+            >>> print(Message(is_extended_id=False, arbitration_id=100))
             Timestamp:        0.000000        ID: 0064    S        DLC: 0
 
 
@@ -63,7 +72,7 @@ Message
 
         :type: int
 
-        The :abbr:`DLC (Data Link Count)` parameter of a CAN message is an integer
+        The :abbr:`DLC (Data Length Code)` parameter of a CAN message is an integer
         between 0 and 8 representing the frame payload length.
 
         In the case of a CAN FD message, this indicates the data length in
@@ -82,20 +91,30 @@ Message
             represents the amount of data contained in the message, in remote
             frames it represents the amount of data being requested.
 
+    .. attribute:: channel
+
+        :type: str or int or None
+
+        This might store the channel from which the message came.
+
 
     .. attribute:: is_extended_id
 
         :type: bool
 
         This flag controls the size of the :attr:`~can.Message.arbitration_id` field.
+        Previously this was exposed as `id_type`.
 
-        >>> print(Message(extended_id=False))
+        >>> print(Message(is_extended_id=False))
         Timestamp:        0.000000        ID: 0000    S        DLC: 0
-        >>> print(Message(extended_id=True))
+        >>> print(Message(is_extended_id=True))
         Timestamp:        0.000000    ID: 00000000    X        DLC: 0
 
 
-        Previously this was exposed as `id_type`.
+        .. note::
+
+            The initializer argument and attribute ``extended_id`` has been deprecated in favor of
+            ``is_extended_id``, but will continue to work for the ``3.x`` release series.
 
 
     .. attribute:: is_error_frame
@@ -110,7 +129,7 @@ Message
 
     .. attribute:: is_remote_frame
 
-        :type: boolean
+        :type: bool
 
         This boolean attribute indicates if the message is a remote frame or a data frame, and
         modifies the bit in the CAN message's flags field indicating this.
@@ -139,15 +158,6 @@ Message
         :type: bool
 
         If this is a CAN FD message, this indicates an error active state.
-
-
-    .. attribute:: timestamp
-
-        :type: float
-
-        The timestamp field in a CAN message is a floating point number representing when
-        the message was received since the epoch in seconds. Where possible this will be
-        timestamped in hardware.
 
 
     .. method:: __str__

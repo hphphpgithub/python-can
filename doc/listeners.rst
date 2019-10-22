@@ -19,11 +19,32 @@ the CAN bus.
 .. autoclass:: can.Listener
     :members:
 
+There are some listeners that already ship together with `python-can`
+and are listed below.
+Some of them allow messages to be written to files, and the corresponding file
+readers are also documented here.
+
+.. note ::
+
+    Please note that writing and the reading a message might not always yield a
+    completely unchanged message again, since some properties are not (yet)
+    supported by some file formats.
+
 
 BufferedReader
 --------------
 
 .. autoclass:: can.BufferedReader
+    :members:
+
+.. autoclass:: can.AsyncBufferedReader
+    :members:
+
+
+RedirectReader
+--------------
+
+.. autoclass:: can.RedirectReader
     :members:
 
 
